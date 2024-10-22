@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Final, Optional, ClassVar, Set, Tuple, Dict, Union, Callable
+from typing import Final, Literal, Optional, ClassVar, Set, Tuple, Dict, Union, Callable
 import math, struct, ctypes, functools
 from dataclasses import dataclass
 from tinygrad.helpers import getenv
@@ -11,7 +11,10 @@ class DType:
   priority: int  # this determines when things get upcasted
   itemsize: int
   name: str
-  fmt: Optional[str]
+  fmt: Optional[Literal[
+    "b", "B", "@b", "@B", "h", "H", "@h", "@H", "i", "I", "@i", "@I", "l", "L", "@l", "@L", "q", "Q", "@q", "@Q", "P", "@P",
+    "c", "@c", "f", "@f", "d", "@d", "?", "e"
+]]
   count: int
   def __repr__(self): return f"dtypes.{INVERSE_DTYPES_DICT[self.scalar().name]}"+(f".vec({self.count})" if self.count > 1 else "")
   def vec(self, sz:int):

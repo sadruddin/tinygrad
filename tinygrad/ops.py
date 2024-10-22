@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, List, Optional, Set, Union, Tuple, Dict, Callable, cast, TYPE_CHECKING, TypeVar
+from typing import Any, List, Generator, Optional, Set, Union, Tuple, Dict, Callable, cast, TYPE_CHECKING, TypeVar
 import sys, time, functools, itertools, math, operator, hashlib, os, types, pickle
 from enum import auto, IntEnum, Enum
 from dataclasses import dataclass, field
@@ -335,7 +335,7 @@ class UOp(MathTrait):
       if self.arg is BinaryOps.ADD: return math.gcd(self.src[0].const_factor(), self.src[1].const_factor())
       if self.arg is BinaryOps.MUL: return self.src[0].arg if self.src[0].op is UOps.CONST else self.src[1].arg if self.src[1].op is UOps.CONST else 1
     return 1
-  def divides(self, v) -> Optional[UOp]:
+  def divides(self, v: int) -> Optional[UOp]:
     if v==1: return self
     if self.op is UOps.CONST: return self.const_like(self.arg//v) if self.arg%v == 0 else None
     if self.op is UOps.VCONST: return self.const_like(tuple(x//v for x in self.arg)) if all(x%v == 0 for x in self.arg) else None
@@ -784,7 +784,7 @@ def type_verify(uops:List[UOp]):
 
 # *** most of symbolic lives here now ***
 
-def split_uop(x:UOp, sep:BinaryOps):
+def split_uop(x:UOp, sep:BinaryOps) -> Generator[UOp]:
   if x.op is UOps.ALU and x.arg is sep:
     for s in x.src: yield from split_uop(s, sep)
   else: yield x
@@ -798,7 +798,9 @@ def mod_folding(x:UOp, c:int) -> Optional[UOp]:
   remainder, something_changed = [], False
   for u in split_uop(x, BinaryOps.ADD):
     if (factor:=u.const_factor())%c != factor:
-      divides = u.divides(factor)*(factor%c)
+      divides = u.divides(factor)
+      if divides is not None:
+        divides = divides*(factor%c)
       assert divides is not None
       remainder.append(divides)
       something_changed = True
